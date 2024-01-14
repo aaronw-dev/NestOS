@@ -1,0 +1,15 @@
+html,
+body {
+    margin: 0;
+    font-family: Lexend;
+}
+
+@font-face {
+    font-family: Lexend;
+    src: url("./lexend.ttf");
+}
+
+body {
+    background: #080808;
+    color: white;
+}

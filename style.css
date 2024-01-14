@@ -13,3 +13,34 @@ body {
     background: #080808;
     color: white;
 }
+
+.marker {
+    background-size: cover;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+.marker.vehicle {
+    background-image: url('./plane.svg');
+}
+
+.marker.home {
+    background-image: url('./takeoff.svg');
+}
+
+.mapboxgl-popup {
+    max-width: 200px;
+}
+
+.mapboxgl-popup-content {
+    text-align: center;
+    font-family: 'Open Sans', sans-serif;
+    color: black;
+}
+
+.mapboxgl-ctrl-logo,
+.mapboxgl-ctrl-attrib {
+    display: none !important;
+}

@@ -5,11 +5,153 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="style.css">
+
+    <script src='./mapbox/mapbox-gl-seats.js'></script>
+    <link href='./mapbox/mapbox-gl-seats.css' rel='stylesheet' />
+    <script src="https://cdn.jsdelivr.net/gh/jscastro76/threebox@v.2.2.2/dist/threebox.min.js"
+        type="text/javascript"></script>
+    <link href="https://cdn.jsdelivr.net/gh/jscastro76/threebox@v.2.2.2/dist/threebox.css" rel="stylesheet" />
+
     <title>Nest OS</title>
 </head>
 
 <body>
-    <h1>Nest OS</h1>
+
+    <div id='map' style='width: 100vw; height: 100vh; position: absolute'></div>
+    <script>
+        const getMethods = (obj) => {
+            let properties = new Set()
+            let currentObj = obj
+            do {
+                Object.getOwnPropertyNames(currentObj).map(item => properties.add(item))
+            } while ((currentObj = Object.getPrototypeOf(currentObj)))
+            return [...properties.keys()].filter(item => typeof obj[item] === 'function')
+        }
+        var currentlyActiveMarker;
+        function generateRandomString(length) {
+            const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+            let result = '';
+
+            for (let i = 0; i < length; i++) {
+                const randomIndex = Math.floor(Math.random() * charset.length);
+                result += charset.charAt(randomIndex);
+            }
+
+            return result;
+        }
+        function focusElement(marker) {
+            map.flyTo({ center: [-82.91844711770892, 39.57929264162394], zoom: 16 });
+            //currentlyActiveMarker = document.getElementById(marker);
+            //console.log(currentlyActiveMarker)
+            //map.setCenter(marker.getLngLat())
+        }
+
+        function createMarker(type, long, lat, title, description) {
+            const markerID = generateRandomString(10)
+            const markerInformation = {
+                type: 'Feature',
+                geometry: {
+                    type: 'Point',
+                    coordinates: [long, lat]
+                },
+                properties: {
+                    title: title,
+                    description: description,
+                    type: type,
+                    markerID: markerID
+                }
+            }
+            const el = document.createElement('div');
+            el.className = 'marker';
+            el.classList.add(markerInformation.properties.type)
+            el.id = markerID
+
+
+            const marker = new mapboxgl.Marker({ element: el })
+                .setLngLat([long, lat])
+
+            const popup = new mapboxgl.Popup({ offset: 25 })
+                .setHTML(
+                    `<h3>${markerInformation.properties.title}</h3><p>${markerInformation.properties.description}</p><button onclick="focusElement('${markerID}')">Focus me</button>`
+                )
+            popup.on('open', () => {
+                console.log(`${markerInformation.properties.title} popup has been opened.`);
+                console.log(currentlyActiveMarker);
+            });
+            popup.on('close', () => {
+                currentlyActiveMarker = undefined;
+                console.log(`${markerInformation.properties.title} popup has been closed.`);
+                console.log(currentlyActiveMarker);
+            });
+            marker.setPopup(popup)
+            marker.addTo(map);
+            // make a marker for each feature and add to the map
+            return marker
+        }
+        mapboxgl.accessToken = 'pk.eyJ1IjoiYXdkZXYiLCJhIjoiY2xyY3ZkazJqMTNoaTJpc3I2dDAyY2l2eiJ9.tR2w-nBDeG4c8RmntErT2Q';
+        var map = new mapboxgl.Map({
+            center: [-123.1788, 49.1951],
+            zoom: 16,
+            container: 'map',
+            style: 'mapbox://styles/mapbox/dark-v11',
+            boxZoom: false,
+        });
+
+        var vehicle;
+        var route;
+        var routeData = {
+            'type': 'Feature',
+            'properties': {},
+            'geometry': {
+                'type': 'LineString',
+                'coordinates': []
+            }
+
+        }
+        map.on('load', () => {
+            map.addSource('route', {
+                'type': 'geojson',
+                'data': routeData
+            })
+            map.addLayer({
+                'id': 'route',
+                'type': 'line',
+                'source': 'route',
+                'layout': {
+                    'line-join': 'round',
+                    'line-cap': 'round'
+                },
+                'paint': {
+                    'line-color': '#bfbfbf',
+                    'line-width': 3
+                }
+            });
+
+            createMarker("home", -123.1769, 49.1933, "Home Base", "Takeoff and landing area designated by pilot.")
+            vehicle = createMarker("vehicle", -123.18, 49.1951, "Hawk", "Hawk H2-F vehicle on patrol mission.")
+            setInterval(() => {
+                if (vehicle !== undefined) {
+                    let currentLngLat = vehicle.getLngLat();
+                    currentLngLat.lng += 0.0001;
+                    currentLngLat.lat += 0.00003;
+                    /* TO DO: FIX ROTATION ALGORITHM*/
+                    var rotation = ((Math.atan2(currentLngLat.lat, currentLngLat.lng) / (2 * Math.PI)) * 360) - 90;
+                    vehicle.setRotation(rotation)
+                    vehicle.setLngLat([currentLngLat.lng, currentLngLat.lat])
+                    routeData.geometry.coordinates.push([currentLngLat.lng, currentLngLat.lat]);
+                    // then update the map
+                    map.getSource('route').setData(routeData);
+                }
+
+                if (currentlyActiveMarker !== undefined) {
+                    map.setCenter(currentlyActiveMarker.getLngLat())
+                    //console.log(currentlyActiveMarker)
+                }
+            }, 500)
+        });
+
+    </script>
+
 </body>
 
 </html>

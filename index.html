@@ -18,7 +18,17 @@
 <body>
 
     <div id='map' style='width: 100vw; height: 100vh; position: absolute'></div>
+    <!--
+    <div id="menu">
+        <input id="satellite-v9" type="radio" name="rtoggle" value="satellite-v9">
+        <label for="satellite-v9">satellite</label>
+        <input id="satellite-streets-v12" type="radio" name="rtoggle" value="satellite-streets-v12">
+        <label for="satellite-streets-v12">satellite streets</label>
+        <input id="dark-v11" type="radio" name="rtoggle" value="dark" checked="checked">
+        <label for="dark-v11">dark</label>
+    </div>-->
     <script>
+
         const getMethods = (obj) => {
             let properties = new Set()
             let currentObj = obj
@@ -52,7 +62,6 @@
                 type: 'Feature',
                 geometry: {
                     type: 'Point',
-                    coordinates: [long, lat]
                 },
                 properties: {
                     title: title,
@@ -67,14 +76,19 @@
             el.id = markerID
 
 
-            const marker = new mapboxgl.Marker({ element: el })
+            const marker = new mapboxgl.Marker({
+                element: el,
+                draggable: true,
+                rotationAlignment: "map"
+            })
                 .setLngLat([long, lat])
 
             const popup = new mapboxgl.Popup({ offset: 25 })
                 .setHTML(
-                    `<h3>${markerInformation.properties.title}</h3><p>${markerInformation.properties.description}</p><button onclick="focusElement('${markerID}')">Focus me</button>`
-                )
+                    `<h3>${markerInformation.properties.title}</h3><p>${markerInformation.properties.description}</p>`
+                )//<button onclick="focusElement('${markerID}')">Focus me</button>
             popup.on('open', () => {
+                currentlyActiveMarker = marker
                 console.log(`${markerInformation.properties.title} popup has been opened.`);
                 console.log(currentlyActiveMarker);
             });
@@ -90,11 +104,12 @@
         }
         mapboxgl.accessToken = 'pk.eyJ1IjoiYXdkZXYiLCJhIjoiY2xyY3ZkazJqMTNoaTJpc3I2dDAyY2l2eiJ9.tR2w-nBDeG4c8RmntErT2Q';
         var map = new mapboxgl.Map({
-            center: [-123.1788, 49.1951],
-            zoom: 16,
+            center: [-123.178, 49.194],
+            zoom: 17,
             container: 'map',
             style: 'mapbox://styles/mapbox/dark-v11',
             boxZoom: false,
+            //dragRotate: false
         });
 
         var vehicle;
@@ -108,32 +123,46 @@
             }
 
         }
+
         map.on('load', () => {
             map.addSource('route', {
                 'type': 'geojson',
                 'data': routeData
             })
+            let baseWidth = 2;
+            let baseZoom = 15;
             map.addLayer({
                 'id': 'route',
                 'type': 'line',
                 'source': 'route',
                 'layout': {
-                    'line-join': 'round',
+                    'line-join': 'bevel',
                     'line-cap': 'round'
                 },
                 'paint': {
-                    'line-color': '#bfbfbf',
-                    'line-width': 3
+                    'line-color': '#33b8ff',
+                    'line-opacity': 0.5,
+                    "line-width": 10,
+                    //"line-dasharray": [2, 2]
                 }
             });
-
+            /*
+            const layerList = document.getElementById('menu');
+            const inputs = layerList.getElementsByTagName('input');
+                for (const input of inputs) {
+                    input.onclick = (layer) => {
+                        const layerId = layer.target.id;
+                        map.setStyle('mapbox://styles/mapbox/' + layerId);
+                    };
+                }*/
             createMarker("home", -123.1769, 49.1933, "Home Base", "Takeoff and landing area designated by pilot.")
             vehicle = createMarker("vehicle", -123.18, 49.1951, "Hawk", "Hawk H2-F vehicle on patrol mission.")
             setInterval(() => {
                 if (vehicle !== undefined) {
                     let currentLngLat = vehicle.getLngLat();
-                    currentLngLat.lng += 0.0001;
-                    currentLngLat.lat += 0.00003;
+                    let multiplier = 0.5
+                    currentLngLat.lng += 0.0001 * multiplier;
+                    currentLngLat.lat += 0.00003 * multiplier;
                     /* TO DO: FIX ROTATION ALGORITHM*/
                     var rotation = ((Math.atan2(currentLngLat.lat, currentLngLat.lng) / (2 * Math.PI)) * 360) - 90;
                     vehicle.setRotation(rotation)
@@ -147,7 +176,7 @@
                     map.setCenter(currentlyActiveMarker.getLngLat())
                     //console.log(currentlyActiveMarker)
                 }
-            }, 500)
+            }, 50)
         });
 
     </script>
